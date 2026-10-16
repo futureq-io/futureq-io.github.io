@@ -1,0 +1,1036 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A high-performance, distributed delayed-message queue broker written in Go.">
+      
+      
+      
+        <link rel="canonical" href="https://futureq-io.github.io/clustering/">
+      
+      
+        <link rel="prev" href="../delivery/">
+      
+      
+        <link rel="next" href="../api/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Raft clustering - FutureQ</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="light-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#raft-clustering" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="FutureQ" class="md-header__button md-logo" aria-label="FutureQ" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FutureQ
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Raft clustering
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/futureq-io/futureq" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    futureq-io/futureq
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="FutureQ" class="md-nav__button md-logo" aria-label="FutureQ" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FutureQ
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/futureq-io/futureq" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    futureq-io/futureq
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage & key schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../delivery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Delivery pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Raft clustering
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Raft clustering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#two-raft-groups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two Raft groups
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-shard-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event-shard commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata group
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#join-leave-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Join &amp; leave flows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Join &amp; leave flows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#joining-fresh-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Joining (fresh node)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#leaving" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leaving
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restart
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#leader-persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leader persistence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#publish-ack-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Publish ack levels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restart-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restart &amp; recovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    gRPC API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project layout
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#two-raft-groups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two Raft groups
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-shard-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event-shard commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata group
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#join-leave-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Join &amp; leave flows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Join &amp; leave flows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#joining-fresh-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Joining (fresh node)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#leaving" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leaving
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restart
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#leader-persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leader persistence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#publish-ack-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Publish ack levels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restart-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restart &amp; recovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="raft-clustering">Raft clustering<a class="headerlink" href="#raft-clustering" title="Permanent link">&para;</a></h1>
+<p>Replication is built on <a href="https://github.com/lni/dragonboat">Dragonboat v4</a> (multi-group Raft). Each clustered node participates in <strong>two</strong> Raft groups.</p>
+<h2 id="two-raft-groups">Two Raft groups<a class="headerlink" href="#two-raft-groups" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Event shard</th>
+<th>Metadata shard</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Shard ID</td>
+<td><code>cluster.shardId</code> (default 1)</td>
+<td><code>0</code> (fixed, exported from <code>pkg/raft/metadata</code>)</td>
+</tr>
+<tr>
+<td>State machine</td>
+<td><code>EventStateMachine</code> — on-disk (IOnDiskStateMachine) over the same Pebble DB</td>
+<td><code>MetadataStateMachine</code> — in-memory; rebuilt from the log on restart</td>
+</tr>
+<tr>
+<td>Holds</td>
+<td>All messages, indexes, and metadata keys</td>
+<td>Per-shard topology (leader, members, addresses) + nodeID→gRPC-address registry</td>
+</tr>
+<tr>
+<td>Raft settings</td>
+<td>Election RTT 10, heartbeat RTT 1, CheckQuorum; snapshot intervals from config</td>
+<td>Same timers; aggressive snapshots (every 5 entries) — state is tiny</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In clustered mode the <strong>Pebble WAL is disabled</strong> — the Raft log is the authoritative write-ahead log, and Dragonboat replays committed-but-unapplied entries on restart.</p>
+</div>
+<h2 id="event-shard-commands">Event-shard commands<a class="headerlink" href="#event-shard-commands" title="Permanent link">&para;</a></h2>
+<p>Two binary commands (documented wire formats in <code>internal/raft/event/commands.go</code>), each big-endian, single-allocation marshal, zero-copy unmarshal:</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Payload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>StoreBatchCmd (0)</code></td>
+<td>Per item: <code>u64 id</code> (leader-assigned event ID; replicas apply verbatim so keys converge) · <code>u64 bucket</code> · <code>u64 topicHash</code> · index entries · <code>u32 len</code> + pre-serialized <code>StoredMessage</code>. One publish batch = one log entry.</td>
+</tr>
+<tr>
+<td><code>DeleteBatchCmd (1)</code></td>
+<td>Count + fixed 24-byte message keys — used for ACK-driven deletes and TTL expirations.</td>
+</tr>
+</tbody>
+</table>
+<p><code>Update</code> applies all entries in a log batch into one Pebble batch (nothing partial on error), persists the max applied event ID and <code>metadata/raft/applied-index</code>, and fires the <code>OnDeleteKeys</code> hook so every replica clears dispatcher in-flight entries for deleted keys. Snapshots stream the whole DB as length-prefixed records; recovery clears the DB first and validates the applied index.</p>
+<h2 id="metadata-group">Metadata group<a class="headerlink" href="#metadata-group" title="Permanent link">&para;</a></h2>
+<p>A <code>metadata.Service</code> registers as Dragonboat's Raft/system event listener. On leader or membership changes (ignoring shard 0 itself) it snapshots the shard membership into an <code>UpdateTopologyCmd</code> and proposes it to the metadata group with an ever-increasing epoch. Each node also proposes <code>RegisterNodeAddrCmd(nodeID, api.grpc.advertise)</code> at startup, retrying until the metadata group has a leader. The result: every node (and any SDK that joins as an observer) has a replicated view of the cluster topology, including <strong>the leader's client-facing gRPC address</strong> — that's what client SDKs dial.</p>
+<h2 id="join-leave-flows">Join &amp; leave flows<a class="headerlink" href="#join-leave-flows" title="Permanent link">&para;</a></h2>
+<h3 id="joining-fresh-node">Joining (fresh node)<a class="headerlink" href="#joining-fresh-node" title="Permanent link">&para;</a></h3>
+<ol>
+<li>The fresh node (no local Raft data) dials each seed's gRPC address and calls <code>JoinCluster</code> with its node ID, Raft address, and gRPC address.</li>
+<li>The seed runs the three-step dance on <em>both</em> groups:<ol>
+<li><code>SyncRequestAddNonVoting</code> — join without affecting quorum;</li>
+<li>wait for catch-up (polling membership every 500ms, 30s deadline);</li>
+<li><code>SyncRequestAddReplica</code> — promote to voter.</li>
+</ol>
+</li>
+<li>The joining node starts its Raft groups in "join" mode; membership was registered via the RPC.</li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>JoinCluster</code> must reach the <strong>leader</strong> (membership ops fail on followers); the RPC is not forwarded. Clients should ask <code>GetClusterInfo</code> first or retry across seeds.</p>
+</div>
+<h3 id="leaving">Leaving<a class="headerlink" href="#leaving" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>futureq leave --seed &lt;addr&gt;</code> (or a direct <code>LeaveCluster</code> RPC) removes the node's replica from the event shard and then the metadata group.</li>
+<li><code>LeaveMetadata</code> removes a metadata-group <em>observer</em> only.</li>
+</ul>
+<h3 id="restart">Restart<a class="headerlink" href="#restart" title="Permanent link">&para;</a></h3>
+<ul>
+<li>If local Raft data exists (<code>logdb-0/MANIFEST-000001</code>), the node skips the join flow and starts as an existing member.</li>
+<li>On <code>ErrShardNotBootstrapped</code> (e.g. stale data from an aborted bootstrap), the app wipes <code>cluster.raft.dataDir</code> so the next start retries cleanly instead of crash-looping.</li>
+</ul>
+<h2 id="leader-persistence">Leader persistence<a class="headerlink" href="#leader-persistence" title="Permanent link">&para;</a></h2>
+<p><code>internal/raft/leaderpersist</code> decorates Dragonboat's LogDB ("tan+leaderpersist"). After every successful <code>SaveRaftState</code> it hashes each persisted log entry's command and notifies the tracker, which closes registered waiter channels. This is the mechanism behind the <strong>leader ack level</strong>: a publisher is acknowledged once the leader has durably written the entry to its local Raft log — before quorum commit. Correlation is by command hash; in-flight payloads can't collide because batch commands embed monotonically increasing event IDs.</p>
+<h2 id="publish-ack-levels">Publish ack levels<a class="headerlink" href="#publish-ack-levels" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Durability</th>
+<th>Mechanism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ACK_LEVEL_QUORUM</code> (default)</td>
+<td>Returns after majority commit</td>
+<td><code>SyncPropose</code> bounded by <code>publish.proposalTimeout</code> (default 5s)</td>
+</tr>
+<tr>
+<td><code>ACK_LEVEL_LEADER</code></td>
+<td>Returns once the leader durably persisted the entry locally; followers replicate asynchronously</td>
+<td>Async propose + leaderpersist tracker wait. <strong>Can lose data on leader crash.</strong></td>
+</tr>
+<tr>
+<td><code>ACK_LEVEL_NO_ACK</code></td>
+<td>Fire-and-forget; success means "submitted" only</td>
+<td>Async propose, no wait</td>
+</tr>
+</tbody>
+</table>
+<p>The broker enforces a configurable floor: <code>publish.minAckLevel</code> (<code>quorum</code> | <code>leader</code> | <code>noAck</code>, default <code>quorum</code>). A batch requesting a level weaker than the floor is rejected with <code>InvalidArgument</code>. A missing/unknown level field counts as QUORUM.</p>
+<h2 id="restart-recovery">Restart &amp; recovery<a class="headerlink" href="#restart-recovery" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Event IDs never regress: the last ID is persisted in the Pebble metadata keyspace and replicas observe applied IDs.</li>
+<li>Committed-but-unapplied log entries are replayed on restart (Pebble WAL is off in clustered mode).</li>
+<li>Snapshots restore the full DB (validated against the applied index); the metadata state machine rebuilds from its log.</li>
+<li>ACKed messages can't be re-dispatched after failover because deletes are Raft-replicated.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.sections", "navigation.top", "navigation.expand", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
